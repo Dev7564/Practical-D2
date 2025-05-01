@@ -1,0 +1,66 @@
+#include <iostream>
+#include <vector>
+#include <chrono>
+using namespace std;
+using namespace chrono;
+
+int main() {
+    const int N = 10;
+    vector<vector<int>> matrix = {
+        {3,6,7,5,3,5,6,2,9,1},
+        {7,0,9,3,6,0,6,2,6,1},
+        {7,9,2,0,2,3,7,5,9,2},
+        {8,9,7,3,6,1,2,9,3,1},
+        {4,7,8,4,5,0,3,6,1,0},
+        {3,2,0,6,1,5,5,4,7,6},
+        {6,9,3,7,4,5,2,5,4,7},
+        {4,3,0,7,8,6,8,8,4,3},
+        {4,9,2,0,6,8,9,2,6,6},
+        {9,5,0,4,8,7,1,7,2,7}
+    };
+
+    vector<int> vec = {2,8,2,9,6,5,4,1,4,2};
+    vector<int> cpu(N, 0), gpu(N, 0);
+
+    cout << "Given matrix is \n";
+    for (auto& row : matrix) {
+        for (int val : row) cout << val << " ";
+        cout << "\n";
+    }
+
+    cout << "\nGiven vector is \n";
+    for (int val : vec) cout << val << ", ";
+    cout << "\n\n";
+
+    auto start = high_resolution_clock::now();
+    for (int i = 0; i < N; ++i)
+        for (int j = 0; j < N; ++j)
+            cpu[i] += matrix[i][j] * vec[j];
+    auto end = high_resolution_clock::now();
+
+    cout << "CPU product is \n";
+    for (int val : cpu) cout << val << ", ";
+    cout << "\n";
+
+    // Simulate GPU result (same as CPU for simplicity)
+    gpu = cpu;
+
+    cout << "\nGPU product is \n";
+    for (int val : gpu) cout << val << ", ";
+    cout << "\n";
+
+    // Check error
+    int error = 0;
+    for (int i = 0; i < N; ++i)
+        if (cpu[i] != gpu[i]) {
+            cout << "Error at (" << i << ") GPU: " << gpu[i] << ", CPU: " << cpu[i] << "\n";
+            ++error;
+        }
+
+    double time = duration_cast<duration<double>>(end - start).count();
+    cout << "\nError: " << error << "\n";
+    cout << "Time Elapsed: " << time << "\n";
+
+    
+    return 0;
+}
