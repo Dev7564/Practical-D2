@@ -1,0 +1,57 @@
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+# Load and preprocess data
+fashion_mnist = tf.keras.datasets.fashion_mnist
+(train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+train_images, test_images = train_images / 255.0, test_images / 255.0
+# Build and compile the model
+model = tf.keras.Sequential([
+tf.keras.layers.Flatten(input_shape=(28,28)),
+tf.keras.layers.Dense(128, activation='relu'),
+tf.keras.layers.Dense(10)
+])
+model.compile(optimizer='adam',
+loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+metrics=['accuracy'])
+# Train and evaluate
+model.fit(train_images, train_labels, epochs=10)
+test_loss, test_acc = model.evaluate(test_images, test_labels, verbose=2)
+print('\nTest accuracy:', test_acc)
+# Prediction model
+probability_model = tf.keras.Sequential([model, tf.keras.layers.Softmax()])
+predictions = probability_model.predict(test_images)
+# Plotting functions
+def plot_image(i, predictions_array, true_label, img):
+plt.grid(False)
+plt.xticks([]); plt.yticks([])
+plt.imshow(img, cmap=plt.cm.binary)
+pred_label = np.argmax(predictions_array)
+color = 'blue' if pred_label == true_label else 'red'
+plt.xlabel(f"{class_names[pred_label]} {100*np.max(predictions_array):2.0f}% ({class_names[true_label]})", color=color)
+def plot_value_array(i, predictions_array, true_label):
+plt.grid(False)
+plt.xticks(range(10)); plt.yticks([])
+bars = plt.bar(range(10), predictions_array, color="#777777")
+bars[np.argmax(predictions_array)].set_color('red')
+bars[true_label].set_color('blue')
+# Plot 15 test predictions
+plt.figure(figsize=(10,10))
+for i in range(15):
+plt.subplot(5,6,2*i+1)
+plot_image(i, predictions[i], test_labels[i], test_images[i])
+plt.subplot(5,6,2*i+2)
+plot_value_array(i, predictions[i], test_labels[i])
+plt.tight_layout()
+plt.show()
+# Predict single image
+img = test_images[1]
+img = (np.expand_dims(img, 0))
+pred_single = probability_model.predict(img)
+print(np.argmax(pred_single[0]))
+# Plot single prediction
+plot_value_array(1, pred_single[0], test_labels[1])
+_ = plt.xticks(range(10), class_names, rotation=45)
+plt.show()
