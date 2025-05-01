@@ -1,0 +1,80 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstdlib>
+#include <chrono>
+#include <omp.h>
+
+using namespace std;
+using namespace chrono;
+
+void merge(vector<int>& arr, int l, int m, int r) {
+    vector<int> left(arr.begin() + l, arr.begin() + m + 1);
+    vector<int> right(arr.begin() + m + 1, arr.begin() + r + 1);
+    int i = 0, j = 0, k = l;
+    while (i < left.size() && j < right.size())
+        arr[k++] = (left[i] < right[j]) ? left[i++] : right[j++];
+    while (i < left.size()) arr[k++] = left[i++];
+    while (j < right.size()) arr[k++] = right[j++];
+}
+
+void mergeSortSeq(vector<int>& arr, int l, int r) {
+    if (l < r) {
+        int m = (l + r) / 2;
+        mergeSortSeq(arr, l, m);
+        mergeSortSeq(arr, m + 1, r);
+        merge(arr, l, m, r);
+    }
+}
+
+void mergeSortPar(vector<int>& arr, int l, int r, int depth = 0) {
+    if (l < r) {
+        int m = (l + r) / 2;
+        if (depth <= 3) {
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                mergeSortPar(arr, l, m, depth + 1);
+                #pragma omp section
+                mergeSortPar(arr, m + 1, r, depth + 1);
+            }
+        } else {
+            mergeSortPar(arr, l, m, depth + 1);
+            mergeSortPar(arr, m + 1, r, depth + 1);
+        }
+        merge(arr, l, m, r);
+    }
+}
+
+void printArray(const vector<int>& arr) {
+    for (int i = 0; i < arr.size(); i++) {
+        cout << arr[i];
+        if (i != arr.size() - 1) cout << ", ";
+    }
+    cout << "\n";
+}
+
+int main() {
+    int n = 100, maxVal = 200;
+    vector<int> arr(n);
+    for (int& x : arr) x = rand() % (maxVal + 1);
+    cout << "Generated random array of length " << n << " with elements between 0 to " << maxVal << "\n\n";
+
+    auto copy = arr;
+    auto start = high_resolution_clock::now();
+    mergeSortSeq(copy, 0, copy.size() - 1);
+    auto end = high_resolution_clock::now();
+    cout << "Sequential Merge sort: " << duration_cast<milliseconds>(end - start).count() << "ms\n";
+    cout << "Sorted array is \n"; printArray(copy); cout << "\n";
+
+    copy = arr;
+    omp_set_num_threads(16);
+    start = high_resolution_clock::now();
+    mergeSortPar(copy, 0, copy.size() - 1);
+    end = high_resolution_clock::now();
+    cout << "Parallel (16) Merge sort: " << duration_cast<milliseconds>(end - start).count() << "ms\n";
+    cout << "Sorted array is \n"; printArray(copy);
+    return 0;
+
+}
+
