@@ -1,0 +1,39 @@
+# Import libraries
+import tensorflow as tf
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+# Load data
+(X_train, y_train), (X_test, y_test) = tf.keras.datasets.boston_housing.load_data()
+# Convert to DataFrame for EDA (optional)
+print(pd.DataFrame(X_train).describe())
+# Normalize data
+scaler = MinMaxScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+# Convert target to float32
+y_train, y_test = y_train.astype('float32'), y_test.astype('float32')
+# Train-validation split
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
+# Build model
+model = tf.keras.Sequential([
+tf.keras.layers.Dense(10, activation='relu', input_shape=(X_train.shape[1],)),
+tf.keras.layers.Dense(100, activation='relu'),
+tf.keras.layers.Dense(1)
+])
+# Compile model
+model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.01),
+loss='mse',
+metrics=['mse'])
+# Train model
+history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_data=(X_val, y_val), verbose=0)
+# Evaluate model
+loss, mse = model.evaluate(X_test, y_test)
+print(f"Test Loss: {loss:.2f}, Test MSE: {mse:.2f}")
+# Plot loss curves
+pd.DataFrame(history.history).plot(title='Loss Curves', xlabel='Epochs', ylabel='Loss')
+plt.show()
+# Make predictions
+y_pred = model.predict(X_test)
+print(f"First prediction: {y_pred[0][0]:.2f}")
