@@ -1,0 +1,92 @@
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <stack>
+#include <chrono>
+#include <omp.h>
+using namespace std;
+using namespace chrono;
+
+const int N = 1000;
+vector<vector<int>> graph(N);
+vector<bool> visited(N, false);
+
+void buildGraph() {
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < 10; j++)
+            graph[i].push_back(rand() % N);
+}
+
+void resetVisited() { fill(visited.begin(), visited.end(), false); }
+
+void dfsRecursive(int v) {
+    visited[v] = true;
+    for (int u : graph[v])
+        if (!visited[u]) dfsRecursive(u);
+}
+
+void dfsIterative(int v) {
+    stack<int> s;
+    s.push(v);
+    while (!s.empty()) {
+        int node = s.top(); s.pop();
+        if (!visited[node]) {
+            visited[node] = true;
+            for (int u : graph[node])
+                if (!visited[u]) s.push(u);
+        }
+    }
+}
+
+void bfs(int v) {
+    queue<int> q;
+    q.push(v); visited[v] = true;
+    while (!q.empty()) {
+        int node = q.front(); q.pop();
+        for (int u : graph[node])
+            if (!visited[u]) {
+                visited[u] = true;
+                q.push(u);
+            }
+    }
+}
+
+void parallelDFS(int v, int threads) {
+    vector<bool> vis(N, false);
+    #pragma omp parallel for num_threads(threads) schedule(dynamic)
+    for (int i = 0; i < N; i++) {
+        if (!vis[i]) dfsIterative(i);
+    }
+}
+
+int main() {
+    buildGraph();
+
+    cout << "Number of nodes: " << N << "\n\n";
+
+    auto t1 = high_resolution_clock::now();
+    resetVisited(); dfsIterative(0);
+    auto t2 = high_resolution_clock::now();
+    cout << "Sequential iterative DFS: " << duration_cast<milliseconds>(t2 - t1).count() << "ms\n";
+
+    t1 = high_resolution_clock::now();
+    resetVisited(); dfsRecursive(0);
+    t2 = high_resolution_clock::now();
+    cout << "Sequential recursive DFS: " << duration_cast<milliseconds>(t2 - t1).count() << "ms\n";
+
+    t1 = high_resolution_clock::now();
+    resetVisited(); bfs(0);
+    t2 = high_resolution_clock::now();
+    cout << "Sequential BFS: " << duration_cast<milliseconds>(t2 - t1).count() << "ms\n";
+
+    for (int th : {1, 2, 4, 8, 16, 32}) {
+        cout << "Using " << th << " threads...\n";
+
+        t1 = high_resolution_clock::now();
+        parallelDFS(0, th);
+        t2 = high_resolution_clock::now();
+        cout << "Parallel DFS: " << duration_cast<milliseconds>(t2 - t1).count() << "ms\n";
+    }
+
+    return 0;
+}
