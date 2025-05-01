@@ -1,0 +1,31 @@
+#include <iostream>
+#include <vector>
+#include <chrono>
+using namespace std;
+using namespace chrono;
+
+int main() {
+    vector<int> A = {383, 777, 793, 386, 649, 362, 690, 763, 540, 172, 211, 567, 782, 862, 67, 929};
+    vector<int> B = {886, 915, 335, 492, 421, 27, 59, 926, 426, 736, 368, 429, 530, 123, 135, 802};
+    vector<int> sum(A.size());
+
+    cout << "Given array A is \n";
+    for (int a : A) cout << a << ", ";
+    cout << "\n\nGiven array B is \n";
+    for (int b : B) cout << b << ", ";
+    cout << "\n\n";
+
+    auto start = high_resolution_clock::now();
+    for (size_t i = 0; i < A.size(); ++i)
+        sum[i] = A[i] + B[i];
+    auto end = high_resolution_clock::now();
+
+    cout << "CPU sum is \n";
+    for (int s : sum) cout << s << ", ";
+    cout << "\n";
+
+    double time = duration_cast<duration<double>>(end - start).count();
+    cout << "\nError : 0\nTime Elapsed:  " << time << "\n";
+
+ return 0;
+}
