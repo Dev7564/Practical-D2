@@ -1,0 +1,81 @@
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <climits>
+#include <omp.h>
+#include <chrono>
+
+using namespace std;
+using namespace chrono;
+
+int main() {
+    int n = 100;
+    int maxVal = 200;
+    vector<int> arr(n);
+    for (int& x : arr) x = rand() % (maxVal + 1);
+
+    cout << "Generated random array of length " << n << " with elements between 0 to " << maxVal << "\n\n";
+    cout << "Given array is \n";
+    for (int i = 0; i < n; ++i) {
+        cout << arr[i];
+        if (i < n - 1) cout << ", ";
+    }
+    cout << "\n\n";
+
+    int minVal = INT_MAX, maxValRes = INT_MIN;
+    long long sum = 0;
+
+    // Sequential
+    auto start = high_resolution_clock::now();
+    for (int x : arr) {
+        if (x < minVal) minVal = x;
+        if (x > maxValRes) maxValRes = x;
+        sum += x;
+    }
+    auto end = high_resolution_clock::now();
+    cout << "Sequential Min: " << minVal << " (" << duration_cast<milliseconds>(end - start).count() << "ms)\n";
+
+    start = high_resolution_clock::now();
+    minVal = INT_MAX;
+    #pragma omp parallel for reduction(min:minVal)
+    for (int i = 0; i < n; ++i)
+        if (arr[i] < minVal) minVal = arr[i];
+    end = high_resolution_clock::now();
+    cout << "Parallel (16) Min: " << minVal << " (" << duration_cast<milliseconds>(end - start).count() << "ms)\n\n";
+
+    // Max
+    start = high_resolution_clock::now();
+    maxValRes = INT_MIN;
+    for (int x : arr) if (x > maxValRes) maxValRes = x;
+    end = high_resolution_clock::now();
+    cout << "Sequential Max: " << maxValRes << " (" << duration_cast<milliseconds>(end - start).count() << "ms)\n";
+
+    start = high_resolution_clock::now();
+    maxValRes = INT_MIN;
+    #pragma omp parallel for reduction(max:maxValRes)
+    for (int i = 0; i < n; ++i)
+        if (arr[i] > maxValRes) maxValRes = arr[i];
+    end = high_resolution_clock::now();
+    cout << "Parallel (16) Max: " << maxValRes << " (" << duration_cast<milliseconds>(end - start).count() << "ms)\n\n";
+
+    // Sum
+    start = high_resolution_clock::now();
+    sum = 0;
+    for (int x : arr) sum += x;
+    end = high_resolution_clock::now();
+    cout << "Sequential Sum: " << sum << " (" << duration_cast<milliseconds>(end - start).count() << "ms)\n";
+
+    start = high_resolution_clock::now();
+    long long psum = 0;
+    #pragma omp parallel for reduction(+:psum)
+    for (int i = 0; i < n; ++i)
+        psum += arr[i];
+    end = high_resolution_clock::now();
+    cout << "Parallel (16) Sum: " << psum << " (" << duration_cast<milliseconds>(end - start).count() << "ms)\n\n";
+
+    // Average
+    cout << "Sequential Average: " << sum / n << " (0ms)\n";
+    cout << "Parallel (16) Average: " << psum / n << " (0ms)\n";
+
+    return 0;
+}
